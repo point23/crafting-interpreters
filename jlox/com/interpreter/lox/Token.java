@@ -1,4 +1,4 @@
-package com.interpreters.lox;
+package com.interpreter.lox;
 
 public class Token {
     final TokenType type;

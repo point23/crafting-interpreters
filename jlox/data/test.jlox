@@ -1,0 +1,33 @@
+var x = 10;
+var y = 20;
+
+/*
+@note
+Simple example of lox.
+In the future we are going to support stuff like:
+    - Type omitted declaration: a := 10;
+    - Type specific function declarations: fun::(a: number, b: number);
+*/
+
+class A {
+    A(x, y) {
+        this.a = x;
+        this.b = y
+    }
+
+    // A simple loop
+    fun loop() {
+        for (var x = 0; x < 20; x++) {
+            if(x = 10) continue;
+            a = a * 2;
+            b = b / 1;
+        }
+    }
+
+    // A simple getter
+    fun get_b() {
+        return b;
+    }
+}
+
+var a = A(x, y);

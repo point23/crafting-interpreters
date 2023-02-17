@@ -1,4 +1,4 @@
-package com.interpreters.lox;
+package com.interpreter.lox;
 
 enum TokenType {
     // Single-character tokens
@@ -11,6 +11,7 @@ enum TokenType {
     MINUS,          // -
     PLUS,           // +
     SEMICOLON,      // ;
+    COLON,          // :
     SLASH,          // _
     STAR,           // *
 
@@ -47,6 +48,7 @@ enum TokenType {
     TRUE,
     VAR,
     WHILE,
+    CONTINUE,
 
     EOF,
 }

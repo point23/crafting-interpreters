@@ -1,13 +1,11 @@
-package com.interpreters.lox;
-
-import sun.security.krb5.internal.PAEncTSEnc;
+package com.interpreter.lox;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.interpreters.lox.TokenType.*;
+import static com.interpreter.lox.TokenType.*;
 
 public class Scanner {
     private final String source;
@@ -35,6 +33,7 @@ public class Scanner {
         keywords.put("true", TRUE);
         keywords.put("var", VAR);
         keywords.put("while", WHILE);
+        keywords.put("continue", CONTINUE);
     }
 
     Scanner (String source) {
@@ -65,6 +64,7 @@ public class Scanner {
             case '.': addToken(DOT); break;
             case '-': addToken(MINUS); break;
             case '+': addToken(PLUS); break;
+            case ':': addToken(COLON); break;
             case ';': addToken(SEMICOLON); break;
             case '*': addToken(STAR); break;
 
@@ -74,15 +74,15 @@ public class Scanner {
             case '<': addToken(match('=') ? GREATER_EQUAL : GREATER); break;
             case '>': addToken(match('=') ? LESS_EQUAL : LESS); break;
 
-            // Division or comment ?
             // @fixme
-            // We should treat the newlines differently in File-run mode and Prompt-run mode.
-            // There should support stuff like '^' as a newline in Prompt-run mode.
+            // - We should treat the newlines differently in File-run mode and Prompt-run mode.
+            // - There should support stuff like '^' as a newline in Prompt-run mode.
+            // Division or Comment
             case '/':
                 if (match('/')) { // If it's a line-comment, consume the whole line.
                     while (peek() != '\n' && !isAtEnd()) advance();
                 } else if (match('*')) { // Block comments
-                    while (!(peek() == '*' && peekNext() == '/') && !isAtEnd()) advance();
+                    blockComment();
                 } else {
                     addToken(SLASH);
                 }
@@ -140,7 +140,6 @@ public class Scanner {
     }
 
 
-
     // @note character consumers
     private char peek() { // Lookahead
         if (isAtEnd()) return '\0';
@@ -190,6 +189,20 @@ public class Scanner {
         TokenType type = keywords.get(text);
         if (type == null) type = IDENTIFIER;
         addToken(type);
+    }
+
+    private void blockComment() {
+        while (!(peek() == '*' && peekNext() == '/') && !isAtEnd()) {
+            if (peek() == '\n') {
+                line += 1;
+            }
+            advance();
+        }
+
+        if (!isAtEnd()) {
+            match('*');
+            match('/');
+        }
     }
 
     // @note Conditional statements...
