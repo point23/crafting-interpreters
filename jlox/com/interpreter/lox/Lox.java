@@ -8,6 +8,13 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 
+// debug-build-args: "A:\code\interpreters\jlox\data\test.jlox"
+/* @incomplete:
+	- [1] Comma expression 						# int x = 1, y = 2, z = 3;
+	- [2] Conditional operator ("ternary")		# int x = condition ? 1 : 2;
+	- [3] Error Production: binary operator that appearing at the beginning of an expr
+ */
+
 public class Lox {
 	static boolean hadError;
 
@@ -47,8 +54,15 @@ public class Lox {
 		List<Token> tokens = scanner.scanTokens();
 
 		for (Token token : tokens) {
-			System.out.println(token);
+			System.out.println(token.toString());
 		}
+
+		Parser parser = new Parser(tokens);
+		Expr expression = parser.parse();
+
+		if (hadError) return;
+
+		System.out.println(new AstPrinter().print(expression));
 
 		if (hadError) System.exit(65);
 	}
@@ -56,6 +70,14 @@ public class Lox {
 	// @todo A Error-Reporter is needed.
 	static void error(int line, String message) {
 		report(line, "", message);
+	}
+
+	static void error(Token token, String message) {
+		if (token.type == TokenType.EOF) {
+			report(token.line, " at end", message);
+		} else {
+			report(token.line, "at " + token.lexeme + "'", message);
+		}
 	}
 
 	private static void report(int line, String where, String message) {

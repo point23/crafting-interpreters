@@ -81,7 +81,6 @@ C实现的语言
 
 - 作为属性保存到AST的节点上
 - 符号表：以标识符作为key
-- xxx
 
 ### 	Section#2 Middle End 
 
@@ -317,11 +316,11 @@ Wikipedia: https://en.wikipedia.org/wiki/Template:Compiler_optimizations
 
 # Part#2 语法树遍历解释器
 
-## Chap#03 扫描（词法分析）
+## 【TODO】Chap#03 扫描（词法分析）
 
 #### 词汇语法(Lexical Grammar)
 
-​	即是描述如何由字符组合出词法单位(Lexeme)
+即是描述如何由字符组合出词法单位(Lexeme)
 
 - 【TODO】
   - 正规语言/乔姆斯基文法/有限状态机
@@ -333,8 +332,649 @@ Wikipedia: https://en.wikipedia.org/wiki/Template:Compiler_optimizations
 
 - `EX_USAGE(64)`
   - The command is used incorrectly
+
 - `EX_USAGE(65)`
   - The input data was incorrect in some way.
+
+    
+
+## Chap#04 代码表示
+
+原始代码：`1 + 2 * 3 - 4`
+
+后序遍历：
+
+![image-20230217160718218](note.assets/image-20230217160718218.png)
+
+我们注意到这一语句中，运算的顺序有先后之分，因此我们对语法的理解也上升一层了，从词法语法（Lexical Grammar）抵达了句法文法（Syntactic Grammar）
+
+术语对照
+
+| Term                 | Lexical    | Syntactic  |
+| -------------------- | ---------- | ---------- |
+| 基本单位（Alphabet） | Characters | Tokens     |
+| 复合单位（String）   | Lexeme     | Expression |
+| 处理者               | Scanner    | Parser     |
+
+### Section#01 上下文无关文法
+
+#### 乔姆斯基体系
+
+乔姆斯基体系（Chomsky Hierarchy）是计算机科学中刻画形式文法表达能力的一个分类谱系：
+
+| 文法 | 语言       | 自动机               | 产生式                                        |
+| ---- | ---------- | -------------------- | --------------------------------------------- |
+| 0型  | 枚举可递归 | 图灵机               | $\alpha \rightarrow \beta$                    |
+| 1型  | 上下文相关 | 线性有界非确定图灵机 | $\alpha A\beta \rightarrow \alpha\gamma\beta$ |
+| 2型  | 上下文无关 | 非确定有限状态机     | $A\rightarrow \gamma$                         |
+| 3型  | 正则语言   | 有限状态自动机       | $A\rightarrow aB \\ A\rightarrow a$           |
+
+-  重复（Repetition）
+
+  $a \rightarrow aA \rightarrow aaA \rightarrow aaaA ...$
+
+  正规文法能够通过递归（Recursion）表达重复却无法限制重复的次数
+
+#### 文法规则
+
+上下文无关文法（CFG, Context-Free Grammars）是形式文法的一种。
+
+在形式文法（Formal Grammar）中，文法是字符串的产生规则，这些规则描述了如何依据语言的**字母表**，并尤其**派生（Derivation）**出所有符合该文法的有效**字符串（String）**。
+
+文法不描述字符串的含义，不描述在具体上下文中它们能做什么，只描述他们的形式。
+
+- **产生式（Production）**
+
+  ​		即文法的规则，产生式由左部（Head，或者说产生式的名称）和右部（Body）构成，描述一个字符串的推导关系。
+
+  ​		上下文无关文法的特征之一是产生式左侧受限——仅有一个标识符（Symbol）。
+
+  ​		PS：左右都不受限的形式文法称为无限制文法（Unrestricted Grammar）
+
+- **终结符（Terminal）**
+
+  ​		是语法字母表中的标识符之一，可以理解为字面值（Literal Value），终结符就是扫描器捕捉捕捉到的词元（Lexeme）。
+
+  ​		推导到终结符后便不可再推导下去。
+
+- **非终结符（Nonterminal）**
+
+  ​		非终结符将会把我们指引到一条产生式规则，我们在原句中应用此规则进行展开，直到不可推导为止。
+
+- 开始符
+
+  ​		通常默认作是产生式规则中的第一条……
+
+#### 例：早餐文法
+
+​		每条产生式由“->”区分左右部分，以“；”结尾。
+
+​		终结符是被引用（“”）的字符，而非终结符均大写。
+
+- 产生式
+
+  ```
+  BREAKFAST -> PROTEIN "with" BREAKFAST "on the side";
+  BREAKFAST -> PROTEIN;
+  BREAKFAST -> BREAD;
+  
+  PROTEIN -> CRISPNESS "crispy" "bacon";
+  PROTEIN -> "sausage";
+  PROTEIN -> COOKED "eggs";
+  
+  CRISPNESS -> "really";
+  CRISPNESS -> "really" CRISPNESS;
+  
+  COOKED -> "scrambled";
+  COOKED -> "poached";
+  COOKED -> "fried";
+  
+  BREAD -> "toast";
+  BREAD -> "biscuits";
+  BREAD -> "english muffin";
+  ```
+
+- 有限的字符串 => 无限的文法
+
+  ![image-20230217182154733](note.assets/image-20230217182154733.png)
+
+#### 增强标记
+
+这也是函数式编程语言Scheme的做法
+
+- Wikipedia: https://zh.wikipedia.org/zh-cn/Scheme
+
+**|** ： 分隔符合并相同左式（相同名称）的产生式
+
+```
+from:
+BREAD -> "toast";
+BREAD -> "biscuits";
+BREAD -> "english muffin";
+to:
+BREAD -> "toast" | "biscuits" | "english muffin";
+```
+
+**()**：合并右部只能产生终结符的产生式
+
+```
+from:
+PROTEIN -> COOKED "eggs";
+COOKED -> "scrambled";
+COOKED -> "poached";
+COOKED -> "fried";
+
+to: 
+PROTEIN -> ("scrambled" | "poached" | "fried") "eggs";
+```
+
+**+/\***: 后缀标记重复的非终结符
+
+```
+from: 
+CRISPNESS -> "really";
+CRISPNESS -> "really" CRISPNESS;
+
+0-n => *:
+CRISPNESS -> "really" "really"*;
+
+1-n => +;
+CRISPNESS -> "really"+;
+```
+
+**?**: 后缀标记可选的产生式（也可以理解为重复0-1次）
+
+```
+from:
+BREAKFAST -> PROTEIN "with" BREAKFAST "on the side";
+BREAKFAST -> PROTEIN;
+BREAKFAST -> BREAD;
+
+to:
+BREAKFAST -> PROTEIN ("with" BREAKFAST "on the side") ?
+			| BREAD;
+```
+
+#### Lox的语法
+
+表达式
+
+- 字面值（Literals）
+
+  Numbers，Strings，Booleans，Nil
+
+- 一元表达式（Unary Expression）
+
+  操作符(operator)：`!, -`
+
+- 二元表达式（Binary Expression）
+
+  操作符：`+, -, *, /, ==, !=, <, <=, >, >=`
+
+- 括号（Parentheses）
+
+  `(), {}, []`
+
+语法
+
+- 非终结符：
+
+  - expression
+  - literal
+  - grouping
+  - unary
+  - binary
+  - operator
+
+- 终结符
+
+  - Numbers(0-9的递归重复)
+  - Strings(a-z+0-9的递归重复)
+  - true, flase, nil
+  - 一元表达式操作符
+  - 二元表达式操作符
+
+- 起始符：expression
+
+- 产生式：
+  $$
+  &Expression &\rightarrow & Literal | Unary | Binary |Grouping;\\
+  &Literal &\rightarrow & Number | String | true | false | nil; \\
+  &grouping  &\rightarrow &(Expression); \\
+  &Unary &\rightarrow  &(-|!) Expression; \\
+  &Binary &\rightarrow &Expression\space operator\space  Expression; \\
+  &operator &\rightarrow &== | != | < | <=\\
+  & & & | > | >= | + | - | * | /; \\
+  &String &\rightarrow &Letter | String\space Letter \\
+  & & & | String\space Digit \\
+  &Number &\rightarrow &Digit^+ \\
+  &Letter&\rightarrow & a | b | c | ... | z; \\
+  &Digit&\rightarrow &0 | 1 | 2 | ... | 9; \\
+  $$
+  
+
+### Section#02 语法树
+
+#### 抽象语法树
+
+解析树（Parse Tree）是包含所有产生式作为节点的语法树，而抽象语法树（AST, Abstract Syntax Tree）会省略那些在后续步骤中不起效的产生式。
+
+#### **面向对象?**
+
+以表达式Expr作为抽象的基类，Expr产生式右式的多个非终结符作为其子类
+
+```java
+abstract class Expr {
+    static class Binary extends Expr {
+        final Expr left, right;
+        final Token operator;
+        Binary(Expr left, Token operator, Expr right) {
+            this.left = left;
+            this.operator = operator;
+            this.right = right;
+        }
+    }
+    // Other expressions ...
+}
+```
+
+- 这些节点类并不属于某个特定领域（Domain），因此它们不应该具有行为，它们是作为Parser和Interpreter的交流工具存在。
+
+- PS：数据与行为分离的模式在函数式编程的范式（Paradigm）中更常见。
+
+#### 元编程
+
+程序生成类型
+
+```java
+package com.interpreter.tool;
+// import ...
+
+public class GenerateAst {
+    public static void main(String[] args) 
+        throws IOException {
+        // Handle invalid args
+        String outputDir = args[0];
+        String base = "Expr";
+        List<String> constructors = Arrays.asList(
+            "Binary(Expr left, Token operator, Expr right)",
+            "Grouping(Expr expression)",
+            "Literal(Object value)",
+            "Unary(Token operator, Expr right)"
+        );
+        defineAst(outputDir, base, constructors);
+    }
+
+    private static void defineAst(String dir, String base, List<String> constructors)
+        throws IOException{
+        // Create package, import dependencies...
+        // Build generic visitor interface
+        // Build abstract accept method
+       	// Define each derived type
+        // Write to file
+    }
+
+    private static void defineType(StringBuilder builder, String base, String type, String fields) {
+        // Drop the parentheses and split fields by comma
+        // Add fields
+        // Add constructor
+    }
+}
+```
+
+一边代码的操作对象是数据，而元编程（Metaprogramming）以其他代码作为操作对象。
+
+#### 处理树状结构
+
+**解释器模式（Interpreter Pattern）**
+
+https://sourcemaking.com/design_patterns/interpreter
+
+UML <img src="note.assets/image-20230217225541657.png" alt="image-20230217225541657" style="zoom:50%;" />
+
+意图：将一个定义域（Domain）内的问题以递归文法的形式进行建模
+
+问题：可拓展性差（Scales Poorly）
+
+- 可能会造成类膨胀，静态编程语言实现的解释器模式需要大量的类型检查代码，整个设计过于复杂，难以维护。
+
+**==对比：OOP vs FP==**
+
+以类封装操作（Class是第一公民）
+
+- 优势：便于拓展类（New Class）
+
+  ​		每个类都有一系列Methods，添加新的“一行”函数就添加了一个新类，不修改任何现有代码。
+
+  <img src="note.assets/image-20230217230327248.png" alt="image-20230217230327248" style="zoom:50%;" />
+
+- 劣势：难以拓展行为（New Behaviour）
+
+  ​		拓展行为将会造成每一个类都发生改动
+
+区分类型和函数（Function是第一公民）
+
+- 优势：便于拓展操作（New Operation）
+
+  <img src="note.assets/image-20230217231135459.png" alt="image-20230217231135459" style="zoom:50%;" />
+
+- 劣势：难以拓展类型
+
+  ​		每增加一个新的类型，原有的每一个函数都需要新增类型检查代码。
+
+**访问者模式（The Visitor Pattern）**
+
+访问者模式意不在“访问”——以某种方式遍历某个组合模式（Composite Pattern）实践下的树状结构，而是面向对象编程（OOP）语言用来接近函数化编程（FP）风格的尝试。
+
+> We can define all of the behavior for a new operation on a set of types in one place, without having to touch the types themselves  
+
+范例：甜品危机
+
+<img src="note.assets/image-20230218000624867.png" alt="image-20230218000624867" style="zoom:50%;" />
+
+- 甜品类
+
+  ```java
+  abstract class Pastry {}
+  class Beignet extends Pastry {}
+  class Cruller extends Pastry {}
+  ```
+
+- 问题：需要定义对每个甜品进行的操作，但不向现有类中新增代码
+
+  - Cooking
+  - Decorating
+  - Eating
+
+- 实现:
+
+  ```java
+  interface PastryVistor {
+      void visitBeignet(Beignet beignet);
+      void visitCruller(Cruller cruller);
+  }
+  ```
+
+  ​		每一个试图对甜品类进行的操作都以一个新的`**Visitor`类封装
+
+  ​		而在运行时定位到正确`Visit**`方法的问题，则通过多态（Polymorphism）来解决，即所谓的多态派分（Polymorphic Dispatch）。
+
+  ```java
+  abstract class Pastry {
+  	abstract void accept(PastryVisitor visitor);
+  }
+  
+  class Beignet extends Pastry {
+      @Override
+      void accept(PastryVisitor visitor) {
+          visitor.visitBeignet(this);
+      }
+  }
+  
+  // Use Case:
+  Pastry beignet = new Beignet();
+  
+  PastryVistor cook = 
+      new PastryCookingVisitor();
+  PastryVistor decorater = 
+      new PastryDecoratingVisitor();
+  
+  beignet.accepet(cook);
+  beignet.accepet(decorater);
+  ```
+
+**访问表达式**
+
+- ```java
+  interface Visitor<R> {
+      R visitBinaryExpr(Binary expr);
+      R visitGroupingExpr(Grouping expr);
+      R visitLiteralExpr(Literal expr);
+      R visitUnaryExpr(Unary expr);
+  }
+  
+  static class Unary extends Expr {
+      final Token operator;
+      final Expr right;
+      Unary(Token operator, Expr right) {
+          this.operator = operator;
+          this.right = right;
+      }
+  
+      @Override
+      <R> R accept(Visitor<R> visitor) {
+          return visitor.visitUnaryExpr(this);
+      }
+  }
+  ```
+
+**==打印表达式==**
+
+PS: `fun(Type... types)`是Java中可变长度参数的语法
+
+ ```java
+ public class AstPrinter implements Expr.Visitor<String> {
+     String print(Expr expr) {
+         return expr.accept(this);
+     }
+ 
+     private String parenthesize(String name, Expr... exprs) {
+         StringBuilder builder = new StringBuilder();
+         builder.append("(").append(name);
+         for (Expr expr : exprs) {
+             // This is where recursive happens
+             builder.append(" ").append(expr.accept(this));
+         }
+         builder.append(")");
+         return builder.toString();
+     }
+ 
+     @Override
+     public String visitBinaryExpr(Expr.Binary expr) {
+         // case: a + b ==> (+ a b)
+         return parenthesize(expr.operator.lexeme, expr.left, expr.right);
+     }
+ 
+     @Override
+     public String visitGroupingExpr(Expr.Grouping expr) {
+         return parenthesize("group", expr.expression);
+     }
+ 
+     @Override
+     public String visitUnaryExpr(Expr.Unary expr) {
+         return parenthesize(expr.operator.lexeme, expr.right);
+     }
+     
+     // The "terminal" to the parenthesis method
+     @Override
+     public String visitLiteralExpr(Expr.Literal expr) {
+         if (expr.value == null) return "nil";
+         return expr.value.toString();
+     }
+ }
+ ```
+
+Result
+
+- From: `-123 * (45.67)`
+- To: `(* (- 123) (group 45.67))`
+
+## Chap#05 解析表达式
+
+**合格的解析器**
+
+-   有效的错误处理
+-   内聚的内部结构
+-   复杂语法的解析
+
+**解析器工作**
+
+-   输入一系列标识符（Token），输出对应的语法树
+-   输入一系列非法字符串，检查并报告错误
+
+**Parse词源**
+
+-   法语“Pars” ，对应英文“Parts”。意为将文本的每个词语映射到语言中的语法。
+
+### Section#01 二义性
+
+#### 概念
+
+**二义性（Ambiguity）示例：**
+
+如果一个文法存在某个句子对应两棵不同的语法树，则该文法是二义性文法
+
+-   原字符串： <img src="note.assets/image-20230219105404919.png" alt="image-20230219105404919" style="zoom: 50%;" />
+
+-   解析获得的语法树
+
+    <img src="note.assets/image-20230219105427491.png" alt="image-20230219105427491" style="zoom: 50%;" />
+
+**造成二义性的原因**
+
+-   优先级（Precedence）
+
+    决定了操作符被计算的顺序
+
+-   结合律（Associativity）
+
+    决定了相同优先级的操作符以怎样的顺序被计算
+
+    -   左结合（Left-associative）
+
+        `(5 - 3) - 1`
+
+    -   右结合（Right-associative）
+
+        `a = (b = c)`
+
+    -   非结合（Non-associative）
+
+        `a..b..c #ERROR!`
+
+-   PS: 结合律对浮点数乘法的意义
+
+    ```js
+    0.1 * (0.2 * 0.3) => 0.006
+    (0.1 * 0.2) * 0.3 => 0.006000000000000001
+    ```
+
+C语言的优先级与结合律
+
+<img src="note.assets/image-20230219110824009.png" alt="image-20230219110824009" style="zoom:50%;" />
+
+#### 二义性的消除
+
+新的文法
+
+<img src="note.assets/image-20230219230146460.png" alt="image-20230219230146460" style="zoom:50%;" />
+
+从优先级低的产生式指向优先级高得产生式
+
+同时此处得文法是进行了消除左递归和间接左递归的：
+$$
+From:
+&Factor &\rightarrow & Factor\space [*|/]\space Unary | Unary; \\
+To:
+&Factor &\rightarrow & Unary\space [[*|/]\space Unary]*; \\
+$$
+
+### Section#02 递归下降分析
+
+递归向下（Recursive  Descent）的解析器又被成为自顶向下（Top-Down Parser）解析器：从语法树顶点的表达式推导到语法树叶子节点的子表达式。
+
+<img src="note.assets/image-20230219225759591.png" alt="image-20230219225759591" style="zoom:50%;" />
+
+#### ==语法标记->潜在代码==
+
+<img src="note.assets/image-20230219230222834.png" alt="image-20230219230222834" style="zoom:50%;" />
+
+#### The Parser Class
+
+将产生式映射到代码
+
+```java
+// Generator: equality -> comparison (("!=" | "==") comparison)*;
+private Expr equality() {
+    Expr expr = comparison();
+
+    while (match(BANG_EQUAL, EQUAL_EQUAL)) {
+        Token operator = previous();
+        Expr right = comparison();
+        expr = new Expr.Binary(expr, operator, right);
+    }
+
+    return expr;
+}
+
+private boolean match(TokenType... types) {
+    for (TokenType type : types) {
+        if (check(type)) {
+            advance();
+            return true;
+        }
+    }
+    
+    return false;
+}
+```
+
+### Section#03 语法错误
+
+#### 错误检测要求
+
+-   快速解析
+-   尽可能多的报告所有明显的错误
+-   最小化串联的（Cascadeed）错误
+
+#### 错误恢复
+
+**应急模式（Panic Mode）**
+
+当某个标识符不符合预期时，我们就立即进入了应急模式。
+
+**误差产生式（Error Production）**
+
+​		我们拓展现有的产生式——以单元表达式为例，Lox的语法不允许：`+expression`的存在，为了解决该错误，从逻辑上我们将Unary的产生式拓展为接受+标识符，而在程序中进行错误处理。
+
+**同步（Synchronization）**
+
+跳出当前的产生式层级，持续丢弃标识符，直到某个匹配成功的层级，丢弃字符串容易，难点在于重置整个递归向下的解析器程序的状态——我们依赖Java的调用栈（Call Stack）找到对应的调用帧（Call Frame），并清楚其上的调用帧。
+
+```java
+private void synchronize() {
+    advance();
+
+    while (!isAtEnd()) {
+        if (previous().type == SEMICOLON) return;
+
+        switch(peek().type) {
+            case CLASS:
+            case FUN:
+            case VAR:
+            case FOR:
+            case IF:
+            case WHILE:
+            case PRINT:
+            case RETURN:
+                return;
+        }
+
+        advance();
+    }
+}
+```
+
+同步终止条件：
+
+-   前一标识符是声明（Statement）的终止符——分号（SEMICOLON）。
+-   当前标志符是声明的起始符——Class，Fun等等
+
+
+
+
+
+
 
 
 
