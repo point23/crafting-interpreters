@@ -12,11 +12,20 @@ import java.util.List;
 /* @incomplete:
 	- [1] Comma expression 						# int x = 1, y = 2, z = 3;
 	- [2] Conditional operator ("ternary")		# int x = condition ? 1 : 2;
-	- [3] Error Production: binary operator that appearing at the beginning of an expr
+	- [3] Error Production: binary operator that appearing at the beginning of an expr  # *2 == 2
+	- [4] Divide by zero
+	- [5] If left operand is a string, we shall take forms like # "ruby" + 3 ==> "ruby3"
+	- [6] Compare other types
  */
 
 public class Lox {
+	private static final Interpreter interpreter = new Interpreter();
+
+	static boolean debugShowAST;
+	static boolean debugShowTokens;
+
 	static boolean hadError;
+	static boolean hadRuntimeError;
 
     public static void main(String[] args) throws IOException {
 		if (args.length > 1) {
@@ -32,6 +41,9 @@ public class Lox {
 	private static void runFile(String path) throws IOException {
 		byte[] bytes = Files.readAllBytes(Paths.get(path));
 		run(new String(bytes, Charset.defaultCharset()));
+
+		if (hadError) System.exit(65);
+		if (hadRuntimeError) System.exit(70);
 	}
 
 	private static void runPrompt() throws IOException {
@@ -53,8 +65,12 @@ public class Lox {
 		Scanner scanner = new Scanner(source);
 		List<Token> tokens = scanner.scanTokens();
 
-		for (Token token : tokens) {
-			System.out.println(token.toString());
+		if (debugShowTokens) {
+			System.out.println("TOKENS: \n========================");
+			for (Token token : tokens) {
+				System.out.println(token.toString());
+			}
+			System.out.println("========================");
 		}
 
 		Parser parser = new Parser(tokens);
@@ -62,9 +78,13 @@ public class Lox {
 
 		if (hadError) return;
 
-		System.out.println(new AstPrinter().print(expression));
+		if (debugShowAST) {
+			System.out.println("AST: \n========================");
+			System.out.println(new AstPrinter().print(expression));
+			System.out.println("========================");
+		}
 
-		if (hadError) System.exit(65);
+		interpreter.interpret(expression);
 	}
 
 	// @todo A Error-Reporter is needed.
@@ -78,6 +98,10 @@ public class Lox {
 		} else {
 			report(token.line, "at " + token.lexeme + "'", message);
 		}
+	}
+
+	static void runtimeError(RuntimeError e) {
+		System.out.println("\nRUNTIME ERROR: " + e.getMessage() + " [line " + e.token.line + "]");
 	}
 
 	private static void report(int line, String where, String message) {

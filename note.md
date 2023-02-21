@@ -320,11 +320,105 @@ Wikipedia: https://en.wikipedia.org/wiki/Template:Compiler_optimizations
 
 #### 词汇语法(Lexical Grammar)
 
-即是描述如何由字符组合出词法单位(Lexeme)
+即是描述如何由字符组合出词法单位(Lexeme)， 扫描器的关键就是根据我们设定的词汇语法规则，分析输入的字符流，解析成一些列标识符。
 
-- 【TODO】
-  - 正规语言/乔姆斯基文法/有限状态机
-  - 参考资料——the dragon book  
+#### 入口
+
+Lox#main
+
+```java
+public static void main(String[] args) throws IOException {
+    if (args.length > 1) {
+        System.out.println("Usage: jlox [script]");
+        System.exit(64);
+    } else if (args.length == 1) {
+        runFile(args[0]);
+    } else {
+        runPrompt();
+    }
+}
+```
+
+#### 标识符类
+
+```java
+public class Token {
+    final TokenType type;
+    final String lexeme;
+    final Object literal;
+    final int line;
+
+    Token(TokenType type, String lexeme, Object literal, int line) {
+        this.type = type;
+        this.lexeme = lexeme;
+        this.literal = literal;
+        this.line = line;
+    }
+
+    public String toString() {
+        return type + " " + lexeme + " " + literal;
+    }
+}
+```
+
+标识符类保存的信息在解析器（Parser），“解释器”（Interpreter，程序运行）类以及报错均有大量使用。
+
+#### 扫描器
+
+Scanner#scanToken
+
+```java
+private void scanToken() {
+    char c = advance();
+    switch(c) {
+        // single-character lexemes
+        case '(': addToken(LEFT_PAREN); break;
+        // ...
+
+		// single-character lexemes
+        case '!': addToken(match('=') ? BANG_EQUAL : BANG); break;
+        case '=': addToken(match('=') ? EQUAL_EQUAL : EQUAL); break;
+        case '<': addToken(match('=') ? GREATER_EQUAL : GREATER); break;
+        case '>': addToken(match('=') ? LESS_EQUAL : LESS); break;
+
+		// @fixme
+		// - We should treat the newlines differently in File-run mode and Prompt-run mode.
+		// - There should support stuff like '^' as a newline in Prompt-run mode.
+		// Division or Comment
+        case '/':
+            if (match('/')) { // If it's a line-comment, consume the whole line.
+                while (peek() != '\n' && !isAtEnd()) advance();
+            } else if (match('*')) { // Block comments
+                blockComment();
+            } else {
+                addToken(SLASH);
+            }
+            break;
+
+            // Other meaningless characters
+        case ' ':
+        case '\r':
+        case '\t':
+            break;
+
+            // Finished current line.
+        case '\n': line++; break;
+
+            // Literals
+        case '"': string(); break;
+
+        default: {
+            if (isDigit(c)) {
+                number();
+            } else if (isAlpha(c)) {
+                identifier();
+            } else {
+                Lox.error(line, "Unexpected character");
+            }
+        } break;
+    }
+}
+```
 
 #### Exit Code
 
@@ -335,6 +429,10 @@ Wikipedia: https://en.wikipedia.org/wiki/Template:Compiler_optimizations
 
 - `EX_USAGE(65)`
   - The input data was incorrect in some way.
+
+- `EX_USAGE(70)`
+
+    - Internal software error has been detected.
 
     
 
@@ -970,9 +1068,66 @@ private void synchronize() {
 -   前一标识符是声明（Statement）的终止符——分号（SEMICOLON）。
 -   当前标志符是声明的起始符——Class，Fun等等
 
+## Chap#06 计算表达式
 
+#### Lox => Java
 
+从计算表达式开始，程序就已经处在运行时（Runtime）了。
 
+Loxd的值（Value）由字面值（Literal）创造，经表达式（Expression）计算，被变量（Variable）存储。
+
+![image-20230221223245660](note.assets/image-20230221223245660.png)
+
+将Lox字面值视为Java对象，运行时时使用JVM提供的instanceOf方法来判断其具体类型。
+
+#### 表达式计算类
+
+```java
+public class Interpreter implements Expr.Visitor<Object>{
+
+    @Override
+    public Object visitLiteralExpr(Expr.Literal expr) {
+        return expr.value;
+    }
+
+    @Override
+    public Object visitGroupingExpr(Expr.Grouping expr) {
+        return evaluate(expr);
+    }
+
+    @Override
+    public Object visitBinaryExpr(Expr.Binary expr) {
+        Object left = evaluate(expr.left);
+        Object right = evaluate(expr.right);
+
+        switch(expr.operator.type) {
+            // Comparison
+            case GREATER: {
+                if (left instanceof Double && right instanceof Double)
+                    return (double)left > (double)right;
+            } break;
+            // ...
+            // Arithmetic...
+        }
+    }
+    
+    // Vistor of other kinds of expr...
+    // Helper methods
+}
+```
+
+#### 运行时错误
+
+对应Lox语言的用户来说，底层实现语言Java的运行时错误是应该被隐藏的，我们需要处理所以可能发生错误的条件判断，规避Java的运行时错误。
+
+类型检查
+
+```java
+private void checkNumberOperand(Token operator, Object operand) {
+    if (operand instanceof Double) return;
+    throw new RuntimeError(operator, "Operand must be a number");
+}
+```
 
 
 
