@@ -19,6 +19,11 @@ public class RpnVisitor implements Expr.Visitor<String> {
     }
 
     @Override
+    public String visitAssignExpr(Expr.Assign expr) {
+        return null;
+    }
+
+    @Override
     public String visitBinaryExpr(Expr.Binary expr) {
         // case: a + b ==> (+ a b)
         return format(expr.operator.lexeme, expr.left, expr.right);
@@ -39,6 +44,11 @@ public class RpnVisitor implements Expr.Visitor<String> {
     @Override
     public String visitUnaryExpr(Expr.Unary expr) {
         return format(expr.operator.lexeme, expr.right);
+    }
+
+    @Override
+    public String visitVariableExpr(Expr.Variable expr) {
+        return null;
     }
 
     public static void main(String[] args) {

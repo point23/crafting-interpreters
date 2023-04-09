@@ -1,5 +1,31 @@
-var x = 10;
-var y = 20;
+// Declaration
+var a = 1;
+var b = 1;
+print a + b;
+
+// Assignment
+print a = 2;
+
+// Scoping
+var a = "global a";
+var b = "global b";
+var c = "global c";
+{
+  var a = "outer a";
+  var b = "outer b";
+  {
+    var a = "inner a";
+    print a;
+    print b;
+    print c;
+  }
+  print a;
+  print b;
+  print c;
+}
+print a;
+print b;
+print c;
 
 /*
 @note
@@ -8,6 +34,10 @@ In the future we are going to support stuff like:
     - Type omitted declaration: a := 10;
     - Type specific function declarations: fun::(a: number, b: number);
 */
+
+/*
+var x = 10;
+var y = 20;
 
 class A {
     A(x, y) {
@@ -31,3 +61,4 @@ class A {
 }
 
 var a = A(x, y);
+*/

@@ -1129,17 +1129,78 @@ private void checkNumberOperand(Token operator, Object operand) {
 }
 ```
 
+## Chap#07 Statement and State
 
+>   Our interpreter should not just process, but remember
 
+#### Statement
 
+Don't evaluate to a value, but produce **<u>side effect</u>**.
 
+-   Expression Statement:  anything ends with a ';'
+-   Print Statement: evaluate an expression and display.
+-   Variale Declaration
+-   Assignment
 
+#### Top Rules
 
+<img src="note.assets/image-20230409113409036.png" alt="image-20230409113409036" style="zoom:50%;" />
 
+<img src="note.assets/image-20230409102508062.png" alt="image-20230409102508062" style="zoom: 50%;" />
 
+<img src="note.assets/image-20230409134020862.png" alt="image-20230409134020862" style="zoom:50%;" />
 
+<img src="note.assets/image-20230409123045901.png" alt="image-20230409123045901" style="zoom:50%;" />
 
+#### Scope
 
+-   Dynamically Scoped
+
+    ```java
+    class Saxophone {
+    	play() {}
+    }
+    
+    class GolfClub {
+    	play() {}
+    }
+    
+    fun playIt() {
+    	thing.play();
+    }
+    ```
+
+-   早期语言中的Dynamic Scope大概也类似于——在运行时Figure out Name refers to What value.
+
+#### Nesting and Shadowing
+
+First Approach
+
+-   在"{"之后开始追踪变量
+-   在"}"后环境清除当前退出的Scope内的变量
+
+-   Problem
+
+    ```java
+    var volume = 11；
+    volume = 0;
+    {
+    	var volume = 3 * 4 * 5;
+    	print volume;
+    }
+    ```
+
+    -   When we exit, the global 'volume' will be destroyed.
+
+Better Apporach - Support <u>**Shadow**</u>
+
+<img src="note.assets/image-20230409142526531.png" alt="image-20230409142526531" style="zoom:50%;" />
+
+-   The fresh environment has a reference to it's parent.
+
+#### Block
+
+<img src="note.assets/image-20230409142851641.png" alt="image-20230409142851641" style="zoom:50%;" />
 
 
 

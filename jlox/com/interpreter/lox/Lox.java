@@ -16,6 +16,7 @@ import java.util.List;
 	- [4] Divide by zero
 	- [5] If left operand is a string, we shall take forms like # "ruby" + 3 ==> "ruby3"
 	- [6] Compare other types
+	- [7] Redeclaration of a value: var a = 1; var a;
  */
 
 public class Lox {
@@ -65,26 +66,20 @@ public class Lox {
 		Scanner scanner = new Scanner(source);
 		List<Token> tokens = scanner.scanTokens();
 
-		if (debugShowTokens) {
-			System.out.println("TOKENS: \n========================");
-			for (Token token : tokens) {
-				System.out.println(token.toString());
-			}
-			System.out.println("========================");
-		}
+//		if (debugShowTokens) {
+//			System.out.println("TOKENS: \n========================");
+//			for (Token token : tokens) {
+//				System.out.println(token.toString());
+//			}
+//			System.out.println("========================");
+//		}
 
 		Parser parser = new Parser(tokens);
-		Expr expression = parser.parse();
+		List<Stmt> statements = parser.parse();
 
 		if (hadError) return;
 
-		if (debugShowAST) {
-			System.out.println("AST: \n========================");
-			System.out.println(new AstPrinter().print(expression));
-			System.out.println("========================");
-		}
-
-		interpreter.interpret(expression);
+		interpreter.interpret(statements);
 	}
 
 	// @todo A Error-Reporter is needed.
@@ -96,7 +91,7 @@ public class Lox {
 		if (token.type == TokenType.EOF) {
 			report(token.line, " at end", message);
 		} else {
-			report(token.line, "at " + token.lexeme + "'", message);
+			report(token.line, " at '" + token.lexeme + "' ", message);
 		}
 	}
 

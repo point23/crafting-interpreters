@@ -13,15 +13,21 @@ public class GenerateAst {
         }
         String outputDir = args[0];
 
-        String base = "Expr";
-        List<String> constructors = Arrays.asList(
-                "Binary(Expr left, Token operator, Expr right)",
+        defineAst(outputDir, "Expr", Arrays.asList(
+                "Assign(Token name, Expr value)",                   // Assignment -> IDENTIFIER "= assignment | equality.
+                "Binary(Expr left, Token operator, Expr right)",    //
                 "Grouping(Expr expression)",
                 "Literal(Object value)",
-                "Unary(Token operator, Expr right)"
-        );
+                "Unary(Token operator, Expr right)",
+                "Variable(Token name)"
+        ));
 
-        defineAst(outputDir, base, constructors);
+        defineAst(outputDir,"Stmt", Arrays.asList(
+                "Block(List<Stmt> statements)",     // Block
+                "Expression(Expr expression)",      // ExprStatement
+                "Print(Expr expression)",           // PrintStatement
+                "Var(Token name, Expr initializer)" // VarDecl
+        ));
     }
 
     private static void defineAst(String dir, String base, List<String> constructors)
