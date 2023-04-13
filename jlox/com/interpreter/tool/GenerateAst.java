@@ -18,15 +18,18 @@ public class GenerateAst {
                 "Binary(Expr left, Token operator, Expr right)",    //
                 "Grouping(Expr expression)",
                 "Literal(Object value)",
+                "Logical(Expr left, Token operator, Expr right)",
                 "Unary(Token operator, Expr right)",
                 "Variable(Token name)"
         ));
 
         defineAst(outputDir,"Stmt", Arrays.asList(
-                "Block(List<Stmt> statements)",     // Block
-                "Expression(Expr expression)",      // ExprStatement
-                "Print(Expr expression)",           // PrintStatement
-                "Var(Token name, Expr initializer)" // VarDecl
+                "Block(List<Stmt> statements)",                         // Block
+                "Expression(Expr expression)",                          // ExprStatement
+                "If(Expr condition, Stmt thenBranch, Stmt elseBranch)", // IfStatement
+                "Print(Expr expression)",                               // PrintStatement
+                "Var(Token name, Expr initializer)",                    // VarDeclaration
+                "While(Expr condition, Stmt body)"                      // WhileStatement
         ));
     }
 

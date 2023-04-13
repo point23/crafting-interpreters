@@ -1204,9 +1204,95 @@ Better Apporach - Support <u>**Shadow**</u>
 
 
 
+## Chap#008 Control Flow
 
+#### Turing Machine && Lambda Calculus
 
+Basis for models of computation.
 
+Functional languages use it as the core.
+
+#### Turing Complete
+
+Can compute any computable function
+
+#### Conditional Execution
+
+-   Conditional/Braching control flow
+
+    ![image-20230413103437445](note.assets/image-20230413103437445.png)
+
+-   Looping control flow
+
+    ![image-20230413113139474](note.assets/image-20230413113139474.png)
+
+#### Logical Operators
+
+<img src="note.assets/image-20230413105634790.png" alt="image-20230413105634790" style="zoom: 50%;" />
+
+-   Why logical expression is separate from binary expression?
+    -   We're trying to skip a block of code.
+
+#### While 
+
+```java
+@Override
+public Void visitWhileStmt(Stmt.While stmt) {
+    while (isTruthy(evaluate(stmt.condition))) {
+        execute(stmt.body);
+    }
+    return null;
+}
+```
+
+-   Without environment, there will be no `WHILE`.
+
+-   `for(;;)` loops is just syntax sugar, there's no need to create a "for Expr" class for our parser to parse and interpreter to visit.
+
+    ```java
+    private Stmt forStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'for'");
+        Stmt initializer;
+        if (match(SEMICOLON)) {
+            initializer = null;
+        } else if (match(VAR)) {
+            initializer = varDeclaration();
+        } else {
+            initializer = expressionStatement();
+        }
+    
+        Expr condition = null;
+        if (!check(SEMICOLON)) {
+            condition = expression();
+        }
+        consume(SEMICOLON, "Expect ';' after loop condition");
+    
+        Expr increment = null;
+        if (!check(RIGHT_PAREN)) {
+            increment = expression();
+        }
+        consume(RIGHT_PAREN, "Expect ')' after for clauses.");
+    
+        Stmt body = statement();
+        if (increment != null) {
+            body = new Stmt.Block(Arrays.asList(
+                body,
+                new Stmt.Expression(increment)
+            ));
+        }
+    
+        if (condition == null) condition = new Expr.Literal(true);
+        Stmt forLoop = new Stmt.While(condition, body);
+    
+        if (initializer != null) {
+            forLoop = new Stmt.Block(Arrays.asList(initializer, forLoop));
+        }
+    
+        return forLoop;
+    }
+    ```
+
+    
 
 
 

@@ -1,12 +1,12 @@
-// Declaration
+print " ===Declaration=== ";
 var a = 1;
 var b = 1;
 print a + b;
 
-// Assignment
+print " ===Assignment=== ";
 print a = 2;
 
-// Scoping
+print " ===Scoping=== ";
 var a = "global a";
 var b = "global b";
 var c = "global c";
@@ -23,9 +23,33 @@ var c = "global c";
   print b;
   print c;
 }
+
 print a;
 print b;
 print c;
+
+print " ===Control Flow=== ";
+print "hi" or 2;
+var x = 1;
+var y = 2;
+print x < y;
+
+if (x > y) {
+    print "X > Y";
+} else {
+    print "X <= Y";
+}
+
+while (x <= y) {
+    x = x + 1;
+    print "In-side wile loop";
+}
+
+for (var i = 1; i < 1000; i = i + 1) {
+    if (i == 999) {
+        print "Round 999";
+    }
+}
 
 /*
 @note
